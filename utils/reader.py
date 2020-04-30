@@ -49,14 +49,17 @@ def clean_tweet(tweet):
     return result
 
 
-def read_tweets(file_path):
+def read_tweets(file_path,file_name):
     """
     function to read labeled training set or dev set and output dataframe
     """
     
     df = pd.read_csv( file_path, sep="\t",dtype="string")
-    df['#2 tweet_content'] = df['#2 tweet_content'].apply(lambda x : bert_pre_processing(x) )
-    df['label'] = df['#3 country_label'].apply(lambda x : labels_dictionary.get(x)) 
+    df["tweet"]=df['#2 tweet_content']
+    df['preprocessed tweet'] = df['#2 tweet_content'].apply(lambda x : bert_pre_processing(x) )
+    df['label'] = df['#3 country_label'].apply(lambda x : labels_dictionary.get(x))
+
+    df.to_csv(path_or_buf="//content/NADI_Shared_Task/data/preprocessed data/"+str(file_name)+".csv")
     return df
 
 
