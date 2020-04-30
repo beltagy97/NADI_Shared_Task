@@ -3,6 +3,10 @@ import pyarabic.araby as arb
 import pandas as pd
 import numpy as np
 
+from preprocess_arabert import never_split_tokens, preprocess
+from transformers import AutoTokenizer
+from py4j.java_gateway import JavaGateway
+
 
 
 
@@ -28,6 +32,14 @@ labels_dictionary = {'Iraq':0,
 'Bahrain':19,
 'Djibouti':20}
 
+gateway = JavaGateway.launch_gateway(classpath='FarasaSegmenterJar.jar')
+farasa = gateway.jvm.com.qcri.farasa.segmenter.Farasa()
+
+
+def bert_pre_processing(tweet):
+  text_preprocessed = preprocess(tweet, do_farasa_tokenization=True , farasa=farasa)
+  return text_preprocessed
+
 
 def clean_tweet(tweet):
     result = re.sub(r"http\S+", "", tweet)
@@ -37,13 +49,13 @@ def clean_tweet(tweet):
     return result
 
 
-def read_tweets(filename):
+def read_tweets(file_path):
     """
     function to read labeled training set or dev set and output dataframe
     """
     
-    df = pd.read_csv( filename +".tsv", sep="\t",dtype="string")
-    df['#2 tweet_content'] = df['#2 tweet_content'].apply(lambda x : clean_tweet(x))
+    df = pd.read_csv( file_path, sep="\t",dtype="string")
+    df['#2 tweet_content'] = df['#2 tweet_content'].apply(lambda x : bert_pre_processing(x) )
     df['label'] = df['#3 country_label'].apply(lambda x : labels_dictionary.get(x)) 
     return df
 
