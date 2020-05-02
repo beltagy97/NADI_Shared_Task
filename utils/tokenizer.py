@@ -23,19 +23,16 @@ class Tokenizer():
 
   
 
-  def bert_tokenize_data(self,train_text,train_labels):
+  def bert_tokenize_data(self,text,labels):
 
     input_ids = []
     attention_masks = []
 
-    for tweet in train_text:
+    for tweet in text:
       input_id,atten_mask=self.bert_tokenize_tweet(tweet)
       input_ids.append(input_id)
       attention_masks.append(atten_mask)
 
-    input_ids = torch.cat(input_ids, dim=0)
-    attention_masks = torch.cat(attention_masks, dim=0)
-    labels = torch.tensor(train_labels)
 
     return input_ids,attention_masks,labels
     
