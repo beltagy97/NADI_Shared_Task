@@ -1,6 +1,11 @@
 from transformers import get_linear_schedule_with_warmup,AdamW
 from transformers import BertForSequenceClassification
 from utils.helper_func import format_time
+
+from utils.tokenizer import Tokenizer
+from utils.data_loader import create_bert_dataloader
+
+import pandas as pd
 import time
 import datetime
 import random
@@ -88,3 +93,40 @@ def train(train_loader,valid_loader,learning_rate=2e-5,eps=1e-8,model=None,devic
       # print("")
       # print("  Average training loss: {0:.2f}".format(avg_train_loss))
       # print("  Training epcoh took: {:}".format(training_time))
+
+def main():
+    
+  training_data=pd.read_csv("data/preprocessed data/labeled training.csv")
+  tweets = list(training_data["preprocessed tweet"])
+  labels = list(training_data["label"])
+
+  print("labels found")
+  tokenizer = Tokenizer()
+  input_ids,mask,labels=tokenizer.bert_tokenize_data(tweets,labels)
+
+  tweets = list(zip(input_ids,mask))
+
+  train_loader,valid_loader=create_bert_dataloader(tweets,labels)
+
+  train(train_loader,valid_loader)
+
+
+
+
+
+if __name__=="__main__":
+  main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
