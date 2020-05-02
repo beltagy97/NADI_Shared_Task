@@ -3,7 +3,9 @@ from transformers import BertForSequenceClassification
 from utils.helper_func import format_time
 
 from utils.tokenizer import Tokenizer
-from utils.data_loader import create_bert_dataloader
+from data_loader import create_bert_dataloader
+
+from models import Models
 
 import pandas as pd
 import time
@@ -22,12 +24,12 @@ from run_model import run_model
 def train(train_loader,valid_loader,learning_rate=2e-5,eps=1e-8,model=None,device="cuda"):
   
   format_time(time.time()-time.time())
-  model= BertForSequenceClassification.from_pretrained(
-    "aubmindlab/bert-base-arabertv01", # Use the 12-layer BERT model, with an uncased vocab.
-    num_labels = 21, 
-    output_attentions = False, # Whether the model returns attentions weights.
-    output_hidden_states = False, # Whether the model returns all hidden-states.
-    )
+  # model= BertForSequenceClassification.from_pretrained(
+  #   "aubmindlab/bert-base-arabertv01", # Use the 12-layer BERT model, with an uncased vocab.
+  #   num_labels = 21, 
+  #   output_attentions = False, # Whether the model returns attentions weights.
+  #   output_hidden_states = False, # Whether the model returns all hidden-states.
+  #   )
   
   model.to(device)
   
@@ -100,7 +102,6 @@ def main():
   tweets = list(training_data["preprocessed tweet"])
   labels = list(training_data["label"])
 
-  print("labels found")
   tokenizer = Tokenizer()
   input_ids,mask,labels=tokenizer.bert_tokenize_data(tweets,labels)
 
@@ -108,7 +109,9 @@ def main():
 
   train_loader,valid_loader=create_bert_dataloader(tweets,labels)
 
-  train(train_loader,valid_loader)
+  model=Models().get_model()
+  
+  train(train_loader,valid_loader,model=model)
 
 
 
