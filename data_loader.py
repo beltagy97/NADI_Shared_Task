@@ -3,10 +3,15 @@ from torch.utils.data import TensorDataset, random_split
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 import torch
 
-def create_bert_dataloader(tweets,labels,test_size=0.05,batch_size = 32):
-
-  train_tweets, valid_tweets,train_labels,  valid_labels = train_test_split(tweets, labels, test_size=test_size, random_state=42,stratify=labels)
+def create_bert_dataloader(train,valid=None,test_size=0.05,batch_size = 32,split_train=True):
   
+  
+  if split_train:
+    tweets , labels = train
+    train_tweets, valid_tweets,train_labels,  valid_labels = train_test_split(tweets, labels, test_size=test_size, random_state=42,stratify=labels)
+  else:
+    train_tweets, train_labels = train
+    valid_tweets , valid_labels =valid
   
 
   train_input,train_mask = ( [ input_ for input_,mask in train_tweets],

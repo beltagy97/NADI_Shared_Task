@@ -76,25 +76,18 @@ def train(train_loader,valid_loader,learning_rate=2e-5,eps=1e-8,model=None,devic
       t0 = time.time()
 
       training_loss,training_acc=run_model(model,train_loader,True,optimizer,scheduler,device=device)
-      print("training loss = "+str(training_loss))
-      print("training acc = "+str(training_acc))
+      print("  Average training loss: {0:.2f}".format(training_loss))
+      print("  Average training accuracy: {0:.2f}".format(training_acc))
       print("-"*50)
 
       valid_loss,valid_acc = run_model(model,valid_loader,device=device)
 
-      print("valid loss = "+str(valid_loss))
-      print("valid acc = "+str(valid_acc))
+      print("  Average validation loss: {0:.2f}".format(valid_loss))
+      print("  Average validation accuracy: {0:.2f}".format(valid_acc))
       print("-"*50)
-
-      # Calculate the average loss over all of the batches.
-      # avg_train_loss = total_train_loss / len(train_dataloader)            
       
       # Measure how long this epoch took.
       training_time = format_time(time.time() - t0)
-
-      # print("")
-      # print("  Average training loss: {0:.2f}".format(avg_train_loss))
-      # print("  Training epcoh took: {:}".format(training_time))
 
 def main():
     

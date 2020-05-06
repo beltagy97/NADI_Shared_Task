@@ -60,5 +60,8 @@ def run_model(model,data_loader,train=False,optimizer=None,scheduler=None,device
             optimizer.step()
             # Update the learning rate.
             scheduler.step()
-  return total_loss,total_accuracy
+
+  avg_train_loss = total_loss / len(data_loader)            
+  avg_train_acc = total_accuracy / len(data_loader)
+  return avg_train_loss,avg_train_acc
           
