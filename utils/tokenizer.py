@@ -20,6 +20,7 @@ class Tokenizer():
                           return_tensors = 'pt',     # Return pytorch tensors.
                     )
     return encoded_dict['input_ids'],encoded_dict['attention_mask']
+    
 
   
 
@@ -33,6 +34,10 @@ class Tokenizer():
       input_ids.append(input_id)
       attention_masks.append(atten_mask)
 
+    tweets = list(zip(input_ids,attention_masks))
 
-    return input_ids,attention_masks,labels
+    data = (tweets,labels)
+    
+
+    return data
     
