@@ -3,7 +3,7 @@ import pyarabic.araby as arb
 import pandas as pd
 import numpy as np
 
-from preprocess_arabert import never_split_tokens, preprocess
+from utils.preprocess_arabert import  preprocess
 from transformers import AutoTokenizer
 from py4j.java_gateway import JavaGateway
 
@@ -61,6 +61,17 @@ def read_tweets(file_path,file_name):
 
     df.to_csv(path_or_buf="//content/NADI_Shared_Task/data/preprocessed data/"+str(file_name)+".csv")
     return df
+
+def read_csv(file_path):
+  
+  '''
+  read pre-porcessed file
+  '''
+  csv=pd.read_csv(file_path)
+  tweets = list(csv["preprocessed tweet"])
+  labels = list(csv["label"])
+  return (tweets,labels)
+
 
 
 
