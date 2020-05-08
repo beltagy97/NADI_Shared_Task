@@ -1,20 +1,27 @@
 import time
 from utils.helper_func import *
 import torch
+from sklearn.metrics import f1_score,accuracy_score,recall_score
+import torch.nn as nn
+from torch.autograd import Variable
 
-def run_model(model,data_loader,train=False,optimizer=None,scheduler=None,device="cuda"):
+
+def run_model(model,data_loader,train=False,optimizer=None,
+              scheduler=None,device="cuda", loss_func=None):
 
   if train:
     model.train()
   else :
     model.eval()
 
-
   # Reset the total loss for this epoch.
+
   total_loss = 0
   total_accuracy=0
+  total_f1 =0
   t0 = time.time()
-  
+  all_preds =[]
+  all_labels =[]
   for step, batch in enumerate(data_loader):
 
           # Progress update every 40 batches.
@@ -40,17 +47,37 @@ def run_model(model,data_loader,train=False,optimizer=None,scheduler=None,device
           model.zero_grad()        
 
           
-          loss, logits = model(input_ids, 
+          model_loss, logits = model(input_ids, 
                               token_type_ids=None, 
                               attention_mask=input_mask, 
                               labels=labels)
 
+ 
           
-          total_loss += loss.item()
+
           total_accuracy += flat_accuracy(logits, labels,device)
+          
+          
+          all_preds += get_preds(logits,device)
+          all_labels += get_labels(labels,device)
+          if loss_func:
+
+            # logits, labels = Variable(logits.float()), Variable(labels.long())
+
+            loss=loss_func(logits.float() 
+                              ,labels.long())
+            total_loss +=loss 
+            loss.backward()
+            
+          else:
+            total_loss += model_loss  
+            model_loss.backward()      
+          
+          
+
 
           # Perform a backward pass to calculate the gradients.
-          loss.backward()
+          
 
           # Clip the norm of the gradients to 1.0.
           # This is to help prevent the "exploding gradients" problem.
@@ -61,7 +88,11 @@ def run_model(model,data_loader,train=False,optimizer=None,scheduler=None,device
             # Update the learning rate.
             scheduler.step()
 
-  avg_train_loss = total_loss / len(data_loader)            
-  avg_train_acc = total_accuracy / len(data_loader)
-  return avg_train_loss,avg_train_acc
+  avg_loss = total_loss / len(data_loader)            
+  avg_acc = total_accuracy / len(data_loader)
+  avg_f1 = f1_score(all_labels,all_preds,average='macro')
+  recall = recall_score(all_labels,all_preds,average='macro')
+
+
+  return avg_loss,avg_acc,avg_f1,recall
           
