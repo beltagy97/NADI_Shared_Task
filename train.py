@@ -19,11 +19,8 @@ from run_model import run_model
 
 
 def get_loss_weights(train_labels):
-
   unique,count=np.unique(train_labels,return_counts=True)
-  
   weights=[1-freq/len(train_labels) for freq in count]
-  
   return weights
 
 
@@ -86,11 +83,11 @@ def train(train_loader,valid_loader, epochs=20
       # Measure how long the training epoch takes.
       t0 = time.time()
 
-      training_loss,training_acc,training_f1,training_recall=run_model(model,train_loader,True,optimizer,scheduler,device=device,loss_func=loss_func)
+      training_loss,training_acc,training_f1,training_recall=run_model(model,train_loader,train=True,optimizer,scheduler,device=device,loss_func=loss_func)
       print("  Average training loss: {0:.4f}".format(training_loss))
       print("  Average training accuracy: {0:.4f}".format(training_acc))
       print("  Average training f1: {0:.4f}".format(training_f1))
-      print("  Average training f1: {0:.4f}".format(training_recall))
+      print("  Average training recall: {0:.4f}".format(training_recall))
       print("-"*50)
 
       valid_loss,valid_acc,valid_f1,valid_recall = run_model(model,valid_loader,device=device,loss_func=loss_func)
@@ -98,7 +95,7 @@ def train(train_loader,valid_loader, epochs=20
       print("  Average validation loss: {0:.4f}".format(valid_loss))
       print("  Average validation accuracy: {0:.4f}".format(valid_acc))
       print("  Average validation f1: {0:.4f}".format(valid_f1))
-      print("  Average validation f1: {0:.4f}".format(valid_recall))
+      print("  Average validation recall: {0:.4f}".format(valid_recall))
       print("-"*50)
       
       # Measure how long this epoch took.
