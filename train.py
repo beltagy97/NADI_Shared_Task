@@ -4,9 +4,11 @@ from utils.helper_func import format_time
 
 from utils.tokenizer import Tokenizer
 from data_loader import create_bert_dataloader
+from utils.reader import read_csv
 
+import torch.nn as nn
 from models import Models
-
+import json
 import pandas as pd
 import time
 import datetime
@@ -15,28 +17,33 @@ import numpy as np
 import torch
 from run_model import run_model
 
-# model = BertForSequenceClassification.from_pretrained(
-#     "aubmindlab/bert-base-arabertv01", # Use the 12-layer BERT model, with an uncased vocab.
-#     num_labels = 21, 
-#     output_attentions = False, # Whether the model returns attentions weights.
-#     output_hidden_states = False, # Whether the model returns all hidden-states.
-# )
-def train(train_loader,valid_loader,learning_rate=2e-5,eps=1e-8,model=None,device="cuda"):
+
+def get_loss_weights(train_labels):
+
+  unique,count=np.unique(train_labels,return_counts=True)
+  
+  weights=[1-freq/len(train_labels) for freq in count]
+  
+  return weights
+
+
+
+
+
+def train(train_loader,valid_loader, epochs=20
+          ,learning_rate=2e-5,regularization = 0.01
+          ,eps=1e-8,model=None,device="cuda"
+          , loss_weights =None,loss_func=None ):
   
   format_time(time.time()-time.time())
-  # model= BertForSequenceClassification.from_pretrained(
-  #   "aubmindlab/bert-base-arabertv01", # Use the 12-layer BERT model, with an uncased vocab.
-  #   num_labels = 21, 
-  #   output_attentions = False, # Whether the model returns attentions weights.
-  #   output_hidden_states = False, # Whether the model returns all hidden-states.
-  #   )
+  
   
   model.to(device)
   
   optimizer = AdamW(model.parameters(),
                     lr = learning_rate, 
                     eps = eps)
-  epochs = 4
+  
 
   total_steps = len(train_loader) * epochs
 
@@ -58,6 +65,10 @@ def train(train_loader,valid_loader,learning_rate=2e-5,eps=1e-8,model=None,devic
   # Measure the total training time for the whole run.
   total_t0 = time.time()
 
+  # if loss func not specified use model 's own loss
+  if loss_func == "weighted_CrossEntropy":
+    loss_func=nn.CrossEntropyLoss(weight=loss_weights,size_average=False)
+
   # For each epoch...
   for epoch_i in range(epochs):
       
@@ -75,36 +86,54 @@ def train(train_loader,valid_loader,learning_rate=2e-5,eps=1e-8,model=None,devic
       # Measure how long the training epoch takes.
       t0 = time.time()
 
-      training_loss,training_acc=run_model(model,train_loader,True,optimizer,scheduler,device=device)
-      print("  Average training loss: {0:.2f}".format(training_loss))
-      print("  Average training accuracy: {0:.2f}".format(training_acc))
+      training_loss,training_acc,training_f1,training_recall=run_model(model,train_loader,True,optimizer,scheduler,device=device,loss_func=loss_func)
+      print("  Average training loss: {0:.4f}".format(training_loss))
+      print("  Average training accuracy: {0:.4f}".format(training_acc))
+      print("  Average training f1: {0:.4f}".format(training_f1))
+      print("  Average training f1: {0:.4f}".format(training_recall))
       print("-"*50)
 
-      valid_loss,valid_acc = run_model(model,valid_loader,device=device)
+      valid_loss,valid_acc,valid_f1,valid_recall = run_model(model,valid_loader,device=device,loss_func=loss_func)
 
-      print("  Average validation loss: {0:.2f}".format(valid_loss))
-      print("  Average validation accuracy: {0:.2f}".format(valid_acc))
+      print("  Average validation loss: {0:.4f}".format(valid_loss))
+      print("  Average validation accuracy: {0:.4f}".format(valid_acc))
+      print("  Average validation f1: {0:.4f}".format(valid_f1))
+      print("  Average validation f1: {0:.4f}".format(valid_recall))
       print("-"*50)
       
       # Measure how long this epoch took.
       training_time = format_time(time.time() - t0)
 
-def main():
-    
-  training_data=pd.read_csv("data/preprocessed data/labeled training.csv")
-  tweets = list(training_data["preprocessed tweet"])
-  labels = list(training_data["label"])
+def main():   
+  train_tweets , train_labels = read_csv("data/preprocessed data/labeled training.csv")
+  valid_tweets , valid_labels = read_csv("data/preprocessed data/labeled_dev.csv")
+  
+  with open("train_config.txt", "r") as read_file:
+    config_dic = json.load(read_file)
+ 
+  loss_weights=get_loss_weights(train_labels)
 
   tokenizer = Tokenizer()
-  input_ids,mask,labels=tokenizer.bert_tokenize_data(tweets,labels)
+  train_data = tokenizer.bert_tokenize_data(train_tweets,train_labels)
+  valid_data = tokenizer.bert_tokenize_data(valid_tweets , valid_labels)
 
-  tweets = list(zip(input_ids,mask))
 
-  train_loader,valid_loader=create_bert_dataloader(tweets,labels)
+  train_loader,valid_loader=create_bert_dataloader(train_data,valid=valid_data,
+                                                  batch_size=config_dic["batch_size"],
+                                                  split_train= config_dic["split_train"],
+                                                  test_size=config_dic["split_size"])
 
-  model=Models().get_model()
+  model=Models(name=config_dic["model"]).get_model()
   
-  train(train_loader,valid_loader,model=model)
+  train(train_loader,
+        valid_loader,
+        model=model,
+        epochs=config_dic["epochs"],
+        learning_rate=config_dic["learning_rate"],
+        eps=config_dic["eps"],
+        device = config_dic["device"],
+        loss_func=config_dic["loss_func"]
+        )
 
 
 
@@ -112,17 +141,3 @@ def main():
 
 if __name__=="__main__":
   main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
