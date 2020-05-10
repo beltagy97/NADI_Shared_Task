@@ -3,7 +3,6 @@ from utils.helper_func import *
 import torch
 from sklearn.metrics import f1_score,accuracy_score,recall_score
 import torch.nn as nn
-from torch.autograd import Variable
 
 
 def run_model(model,data_loader,train=False,optimizer=None,
@@ -61,8 +60,6 @@ def run_model(model,data_loader,train=False,optimizer=None,
           all_preds += get_preds(logits,device)
           all_labels += get_labels(labels,device)
           if loss_func:
-
-            # logits, labels = Variable(logits.float()), Variable(labels.long())
 
             loss=loss_func(logits.float() 
                               ,labels.long())

@@ -16,21 +16,37 @@ import random
 import numpy as np
 import torch
 from run_model import run_model
-
+import os
 
 def get_loss_weights(train_labels):
+
   unique,count=np.unique(train_labels,return_counts=True)
+  
   weights=[1-freq/len(train_labels) for freq in count]
+          
   return weights
 
 
+def save_model(model,model_name,model_path,f1_score,accuracy):
+  parent_dir=os.getcwd()
+  os.chdir(model_path)
+  folder_name = model_name
+  all_files = os.listdir()
+  if folder_name not in all_files:
+    os.mkdir(str(folder_name))
+  os.chdir(folder_name)
+  torch.save(model,"best_validation")
+  os.chdir(parent_dir)
+  
 
 
 
 def train(train_loader,valid_loader, epochs=20
           ,learning_rate=2e-5,regularization = 0.01
           ,eps=1e-8,model=None,device="cuda"
-          , loss_weights =None,loss_func=None ):
+          , loss_weights =None,loss_func=None 
+          ,save_path="save models"
+          ,model_name=None):
   
   format_time(time.time()-time.time())
   
@@ -65,6 +81,8 @@ def train(train_loader,valid_loader, epochs=20
   # if loss func not specified use model 's own loss
   if loss_func == "weighted_CrossEntropy":
     loss_func=nn.CrossEntropyLoss(weight=loss_weights,size_average=False)
+  
+  best_valid_f1 = 0
 
   # For each epoch...
   for epoch_i in range(epochs):
@@ -83,7 +101,7 @@ def train(train_loader,valid_loader, epochs=20
       # Measure how long the training epoch takes.
       t0 = time.time()
 
-      training_loss,training_acc,training_f1,training_recall=run_model(model,train_loader,train=True,optimizer,scheduler,device=device,loss_func=loss_func)
+      training_loss,training_acc,training_f1,training_recall=run_model(model,train_loader,True,optimizer,scheduler,device=device,loss_func=loss_func)
       print("  Average training loss: {0:.4f}".format(training_loss))
       print("  Average training accuracy: {0:.4f}".format(training_acc))
       print("  Average training f1: {0:.4f}".format(training_f1))
@@ -101,12 +119,18 @@ def train(train_loader,valid_loader, epochs=20
       # Measure how long this epoch took.
       training_time = format_time(time.time() - t0)
 
-def main():   
-  train_tweets , train_labels = read_csv("data/preprocessed data/labeled training.csv")
+      if valid_f1 > best_valid_f1 :
+        save_model(model,model_name,save_path,valid_f1,valid_acc)
+        
+
+
+def main():  
+  with open("train_config.txt", "r") as read_file:
+    config_dic = json.load(read_file) 
+  train_tweets , train_labels = read_csv("data/preprocessed data/labeled training.csv",True)
   valid_tweets , valid_labels = read_csv("data/preprocessed data/labeled_dev.csv")
   
-  with open("train_config.txt", "r") as read_file:
-    config_dic = json.load(read_file)
+  
  
   loss_weights=get_loss_weights(train_labels)
 
@@ -120,7 +144,7 @@ def main():
                                                   split_train= config_dic["split_train"],
                                                   test_size=config_dic["split_size"])
 
-  model=Models(name=config_dic["model"]).get_model()
+  model=Models(name=config_dic["model"],path=config_dic["pretrained_model_path"]).get_model(freeze_bert=config_dic["freeze_bert"])
   
   train(train_loader,
         valid_loader,
@@ -129,7 +153,9 @@ def main():
         learning_rate=config_dic["learning_rate"],
         eps=config_dic["eps"],
         device = config_dic["device"],
-        loss_func=config_dic["loss_func"]
+        loss_func=config_dic["loss_func"],
+        save_path = config_dic["save_model_path"],
+        model_name=config_dic["model"]
         )
 
 
