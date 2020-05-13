@@ -5,6 +5,7 @@ from sklearn.metrics import f1_score,accuracy_score,recall_score
 import torch.nn as nn
 
 
+
 def run_model(model,data_loader,train=False,optimizer=None,
               scheduler=None,device="cuda", loss_func=None):
 
@@ -32,9 +33,7 @@ def run_model(model,data_loader,train=False,optimizer=None,
               print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(data_loader), elapsed))
 
           # Unpack this training batch from our dataloader. 
-          #
-          
-          
+
           # `batch` contains three pytorch tensors:
           #   [0]: input ids 
           #   [1]: attention masks
@@ -60,9 +59,8 @@ def run_model(model,data_loader,train=False,optimizer=None,
           all_preds += get_preds(logits,device)
           all_labels += get_labels(labels,device)
           if loss_func:
-
-            loss=loss_func(logits.float() 
-                              ,labels.long())
+            loss=loss_func(logits.view(-1,21) 
+                              ,labels.view(-1))
             total_loss +=loss 
             loss.backward()
             
@@ -90,6 +88,5 @@ def run_model(model,data_loader,train=False,optimizer=None,
   avg_f1 = f1_score(all_labels,all_preds,average='macro')
   recall = recall_score(all_labels,all_preds,average='macro')
 
-
-  return avg_loss,avg_acc,avg_f1,recall
+  return avg_loss,avg_acc,avg_f1,recall,all_preds,all_labels
           

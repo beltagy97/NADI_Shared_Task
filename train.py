@@ -7,7 +7,7 @@ from data_loader import create_bert_dataloader
 from utils.reader import read_csv
 
 import torch.nn as nn
-from models import Models
+from models import get_model
 import json
 import pandas as pd
 import time
@@ -17,6 +17,7 @@ import numpy as np
 import torch
 from run_model import run_model
 import os
+from utils.helper_func import *
 
 def get_loss_weights(train_labels):
 
@@ -35,7 +36,7 @@ def save_model(model,model_name,model_path,f1_score,accuracy):
   if folder_name not in all_files:
     os.mkdir(str(folder_name))
   os.chdir(folder_name)
-  torch.save(model,"best_validation")
+  torch.save(model,"best_validation "+str(f1_score))
   os.chdir(parent_dir)
   
 
@@ -80,10 +81,12 @@ def train(train_loader,valid_loader, epochs=20
 
   # if loss func not specified use model 's own loss
   if loss_func == "weighted_CrossEntropy":
-    loss_func=nn.CrossEntropyLoss(weight=loss_weights,size_average=False)
+    print("using weighted_CrossEntropy loss")
+    # loss_func=nn.CrossEntropyLoss(weight=loss_weights,size_average=False)
+    loss_func=nn.CrossEntropyLoss()
   
   best_valid_f1 = 0
-
+  best_valid_preds =[]
   # For each epoch...
   for epoch_i in range(epochs):
       
@@ -101,14 +104,14 @@ def train(train_loader,valid_loader, epochs=20
       # Measure how long the training epoch takes.
       t0 = time.time()
 
-      training_loss,training_acc,training_f1,training_recall=run_model(model,train_loader,True,optimizer,scheduler,device=device,loss_func=loss_func)
-      print("  Average training loss: {0:.4f}".format(training_loss))
+      training_loss,training_acc,training_f1,training_recall,training_preds,training_labels=run_model(model,train_loader,True,optimizer,scheduler,device=device,loss_func=loss_func)
+      print("  Average training loss: {:.6f}".format(training_loss))
       print("  Average training accuracy: {0:.4f}".format(training_acc))
       print("  Average training f1: {0:.4f}".format(training_f1))
       print("  Average training recall: {0:.4f}".format(training_recall))
       print("-"*50)
 
-      valid_loss,valid_acc,valid_f1,valid_recall = run_model(model,valid_loader,device=device,loss_func=loss_func)
+      valid_loss,valid_acc,valid_f1,valid_recall,valid_preds,valid_labels = run_model(model,valid_loader,device=device,loss_func=loss_func)
 
       print("  Average validation loss: {0:.4f}".format(valid_loss))
       print("  Average validation accuracy: {0:.4f}".format(valid_acc))
@@ -119,16 +122,20 @@ def train(train_loader,valid_loader, epochs=20
       # Measure how long this epoch took.
       training_time = format_time(time.time() - t0)
 
-      if valid_f1 > best_valid_f1 :
-        save_model(model,model_name,save_path,valid_f1,valid_acc)
+      # if valid_f1 > best_valid_f1 :
+      #   save_model(model,model_name,save_path,valid_f1,valid_acc)
+      #   best_valid_preds =valid_preds 
+      #   save_pred_txt(best_valid_preds)
         
 
 
 def main():  
+
   with open("train_config.txt", "r") as read_file:
     config_dic = json.load(read_file) 
+  
   train_tweets , train_labels = read_csv("data/preprocessed data/labeled training.csv",True)
-  valid_tweets , valid_labels = read_csv("data/preprocessed data/labeled_dev.csv")
+  valid_tweets , valid_labels = read_csv("data/preprocessed data/labeled valid.csv")
   
   
  
@@ -144,7 +151,7 @@ def main():
                                                   split_train= config_dic["split_train"],
                                                   test_size=config_dic["split_size"])
 
-  model=Models(name=config_dic["model"],path=config_dic["pretrained_model_path"]).get_model(freeze_bert=config_dic["freeze_bert"])
+  model=get_model(name=config_dic["model"],path=config_dic["pretrained_path"])
   
   train(train_loader,
         valid_loader,
@@ -157,10 +164,6 @@ def main():
         save_path = config_dic["save_model_path"],
         model_name=config_dic["model"]
         )
-
-
-
-
 
 if __name__=="__main__":
   main()
