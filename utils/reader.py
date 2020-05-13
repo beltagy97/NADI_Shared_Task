@@ -3,9 +3,11 @@ import pyarabic.araby as arb
 import pandas as pd
 import numpy as np
 
-from utils.preprocess_arabert import  preprocess
+from utils.helper_func import *
+
+# from preprocess_arabert import  preprocess
 from transformers import AutoTokenizer
-from py4j.java_gateway import JavaGateway
+# from py4j.java_gateway import JavaGateway
 
 
 
@@ -14,7 +16,7 @@ labels_dictionary = {'Iraq':0,
 'Egypt': 1,
 'Algeria':2,
 'Yemen':3,
-'Saudi_Arabia':4,
+'Saudcudai_Arabia':4,
 'Syria':5,
 'United_Arab_Emirates':6,
 'Oman':7,
@@ -32,11 +34,9 @@ labels_dictionary = {'Iraq':0,
 'Bahrain':19,
 'Djibouti':20}
 
-gateway = JavaGateway.launch_gateway(classpath='FarasaSegmenterJar.jar')
-farasa = gateway.jvm.com.qcri.farasa.segmenter.Farasa()
 
 
-def bert_pre_processing(tweet):
+def bert_pre_processing(tweet,farasa):
   text_preprocessed = preprocess(tweet, do_farasa_tokenization=True , farasa=farasa)
   return text_preprocessed
 
@@ -49,30 +49,32 @@ def clean_tweet(tweet):
     return result
 
 
-def read_tweets(file_path,file_name):
+def read_tweets(file_path,file_name,farasa):
     """
     function to read labeled training set or dev set and output dataframe
     """
     
-    df = pd.read_csv( file_path, sep="\t",dtype="string")
-    df["tweet"]=df['#2 tweet_content']
-    df['preprocessed tweet'] = df['#2 tweet_content'].apply(lambda x : bert_pre_processing(x) )
-    df['label'] = df['#3 country_label'].apply(lambda x : labels_dictionary.get(x))
+    df = pd.read_csv( file_path,dtype="string")
+    df["tweet"]=df['tweets']
+    df['preprocessed tweet'] = df['tweets'].apply(lambda x : bert_pre_processing(x,farasa) )
+    df['label'] = df['labels'].apply(lambda x : labels_dictionary.get(x))
 
-    df.to_csv(path_or_buf="//content/NADI_Shared_Task/data/preprocessed data/"+str(file_name)+".csv")
+    df.to_csv("valid.csv")
     return df
 
-def read_csv(file_path):
+def read_csv(file_path,upsampled=False):
   
   '''
   read pre-porcessed file
   '''
   csv=pd.read_csv(file_path)
+  csv.dropna(inplace=True)
+  if upsampled:
+    csv=upsampling(csv)
   tweets = list(csv["preprocessed tweet"])
   labels = list(csv["label"])
+  
   return (tweets,labels)
-
-
 
 
 def read_tweets_unlabeled(path):
@@ -90,3 +92,4 @@ def read_tweets_unlabeled(path):
     del li
     frame = frame.dropna()
     return frame
+

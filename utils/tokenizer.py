@@ -5,10 +5,10 @@ import torch
 
 
 class Tokenizer():
-  def __init__(self,tokenizer_type="bert"):
+  def __init__(self,tokenizer_type="bert",upsample=False):
     self.tokenizer_type=tokenizer_type
     if tokenizer_type =="bert":
-      self.tokenizer = AutoTokenizer.from_pretrained("aubmindlab/bert-base-arabertv01") 
+      self.tokenizer = AutoTokenizer.from_pretrained("/content/drive/My Drive/our repo NADI shared task/NADI_Shared_Task/pretrained bert") 
 
   def bert_tokenize_tweet(self,sent):
     encoded_dict = self.tokenizer.encode_plus(
