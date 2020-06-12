@@ -1,1 +1,2 @@
-
+# NADI Shared Task 2020 for Arabic dialect classification [site](https://sites.google.com/view/nadi-shared-task)
+Arabic has a widely varying collection of dialects. Many of these dialects remain under-studied due to rarity of resources. The goal of the shared task is to alleviate this bottleneck in the context of fine-grained Arabic dialect identification. Dialect identification is the task of classifying the dialect of the tweet writer given the tweet itself.
